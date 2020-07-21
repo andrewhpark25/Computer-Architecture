@@ -15,6 +15,15 @@ class CPU:
         self.ram = [0] * 256
         self.reg = [0] * 8
         self.pc = 0
+        self.branch = {
+        }
+        
+        self.branch[HLT] = self.hlt
+        self.branch[LDI] = self.ldi
+        self.branch[PRN] = self.prn
+        self.branch[MUL] = self.mul
+         
+        
       
 
     def load(self):
@@ -57,6 +66,7 @@ class CPU:
                     # Set the instruction to memory
                     self.ram[address] = instruction
                     address += 1
+                    
         except FileNotFoundError:
             print("File not found")
             sys.exit(2)
@@ -68,7 +78,30 @@ class CPU:
         self.ram[address] = value
              
 
+    def ldi(self):
+        operand_a = self.ram_read(self.pc + 1)
+        operand_b = self.ram_read(self.pc + 2)  
+        self.reg[operand_a] = operand_b
+        self.pc += 3
 
+    def hlt(self):
+        
+        sys.exit(1)
+
+    def prn(self):
+        
+        data = self.ram[self.pc + 1]
+        print(self.reg[data])
+        self.pc += 2
+
+    def mul(self):
+        operand_a = self.ram_read(self.pc + 1)
+        operand_b = self.ram_read(self.pc + 2)  
+        self.alu("MUL", operand_a, operand_b)
+        self.pc += 3
+        
+        
+        
     def alu(self, op, reg_a, reg_b):
         """ALU operations."""
 
@@ -109,24 +142,7 @@ class CPU:
             # read memory address
             ir = self.ram_read(self.pc)
             # read bytes from Ram
-            operand_a = self.ram_read(self.pc + 1)
-            operand_b = self.ram_read(self.pc + 2)
-
-            if ir == HLT:
-                break
-
-            elif ir == LDI:
-                self.reg[operand_a] = operand_b
-                self.pc += 3
-
-            elif ir == PRN:
-                data = self.ram[self.pc + 1]
-                print(self.reg[data])
-                self.pc += 2
-
-            elif ir == MUL:
-                self.alu("MUL", operand_a, operand_b)
-                self.pc += 3
+            self.branch[ir]()
 
             
                 
