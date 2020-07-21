@@ -2,9 +2,10 @@
 
 import sys
 
-HLT = 1
-LDI = 130
-PRN = 71
+HLT = 0b00000001
+PRN = 0b01000111
+LDI = 0b10000010
+MUL = 0b10100010
 
 class CPU:
     """Main CPU class."""
@@ -14,15 +15,16 @@ class CPU:
         self.ram = [0] * 256
         self.reg = [0] * 8
         self.pc = 0
+      
 
     def load(self):
         """Load a program into memory."""
 
-        address = 0
+       # address = 0
 
         # For now, we've just hardcoded a program:
-
-        program = [
+           
+        """program = [
             # From print8.ls8
             0b10000010, # LDI R0,8
             0b00000000,
@@ -34,7 +36,30 @@ class CPU:
 
         for instruction in program:
             self.ram[address] = instruction
-            address += 1
+            address += 1"""
+
+        try:
+            filename = sys.argv[1]
+            address = 0
+            with open(filename) as f:
+                # Read contents line by line
+                for line in f:
+                    # Remove comments
+                    line = line.split("#")[0]
+                    # Remove whitespace
+                    line = line.strip()
+                    # Skip empty lines
+                    if line == "":
+                        continue
+
+                    instruction = int(line, 2)
+
+                    # Set the instruction to memory
+                    self.ram[address] = instruction
+                    address += 1
+        except FileNotFoundError:
+            print("File not found")
+            sys.exit(2)
             
     def ram_read(self, address):
         return self.ram[address]
@@ -49,7 +74,10 @@ class CPU:
 
         if op == "ADD":
             self.reg[reg_a] += self.reg[reg_b]
-        #elif op == "SUB": etc
+            
+        elif op == "MUL":
+            self.reg[reg_a] *= self.reg[reg_b]
+   
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -95,6 +123,10 @@ class CPU:
                 data = self.ram[self.pc + 1]
                 print(self.reg[data])
                 self.pc += 2
+
+            elif ir == MUL:
+                self.alu("MUL", operand_a, operand_b)
+                self.pc += 3
 
             
                 
