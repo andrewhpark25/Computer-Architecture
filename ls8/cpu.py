@@ -6,6 +6,8 @@ HLT = 0b00000001
 PRN = 0b01000111
 LDI = 0b10000010
 MUL = 0b10100010
+PUSH = 0b01000101
+POP = 0b01000110
 
 class CPU:
     """Main CPU class."""
@@ -15,14 +17,17 @@ class CPU:
         self.ram = [0] * 256
         self.reg = [0] * 8
         self.pc = 0
+        self.sp = 7
         self.branch = {
         }
-        
         self.branch[HLT] = self.hlt
         self.branch[LDI] = self.ldi
         self.branch[PRN] = self.prn
         self.branch[MUL] = self.mul
-         
+        self.branch[PUSH] = self.push
+        self.branch[POP] = self.pop
+
+        self.reg[self.sp] = 0xf4
         
       
 
@@ -99,7 +104,25 @@ class CPU:
         operand_b = self.ram_read(self.pc + 2)  
         self.alu("MUL", operand_a, operand_b)
         self.pc += 3
+
+    def push(self):
+        # decrement sp
+        self.reg[self.sp] -= 1
+        sp = self.reg[self.sp]
+        # Get the value we want to store from the register
+        reg_num = self.ram_read(self.pc + 1)
         
+        # Store it
+        self.ram_write(self.reg[reg_num], sp)
+        self.pc += 2
+
+    def pop(self):
+        sp = self.reg[self.sp]
+        value = self.ram[sp]
+        reg_num = self.ram_read(self.pc + 1)
+        self.reg[reg_num] = value
+        self.reg[self.sp] += 1
+        self.pc += 2
         
         
     def alu(self, op, reg_a, reg_b):
