@@ -8,6 +8,9 @@ LDI = 0b10000010
 MUL = 0b10100010
 PUSH = 0b01000101
 POP = 0b01000110
+CALL = 0b01010000 
+RET = 0b00010001
+ADD = 0b10100000
 
 class CPU:
     """Main CPU class."""
@@ -18,17 +21,21 @@ class CPU:
         self.reg = [0] * 8
         self.pc = 0
         self.sp = 7
-        self.branch = {
-        }
+        self.running = True
+        self.branch = {}
         self.branch[HLT] = self.hlt
         self.branch[LDI] = self.ldi
         self.branch[PRN] = self.prn
         self.branch[MUL] = self.mul
         self.branch[PUSH] = self.push
         self.branch[POP] = self.pop
+        self.branch[CALL] = self.call
+        self.branch[RET] = self.ret
+        self.branch[ADD] = self.add
 
-        self.reg[self.sp] = 0xf4
-        
+
+       
+
       
 
     def load(self):
@@ -76,53 +83,69 @@ class CPU:
             print("File not found")
             sys.exit(2)
             
-    def ram_read(self, address):
-        return self.ram[address]
+    def ram_read(self, MAR):
+        return self.ram[MAR]
 
-    def ram_write(self, value, address):
-        self.ram[address] = value
+    def ram_write(self, MDR, MAR):
+        self.ram[MAR] = MDR
              
 
-    def ldi(self):
-        operand_a = self.ram_read(self.pc + 1)
-        operand_b = self.ram_read(self.pc + 2)  
+    def ldi(self, operand_a, operand_b):
         self.reg[operand_a] = operand_b
         self.pc += 3
 
-    def hlt(self):
-        
-        sys.exit(1)
 
-    def prn(self):
+    def hlt(self, operand_a, operand_b):
+        self.running = False
         
-        data = self.ram[self.pc + 1]
-        print(self.reg[data])
+
+    def prn(self, operand_a, operand_b):
+        
+        print(self.reg[operand_a])
         self.pc += 2
+      
 
-    def mul(self):
-        operand_a = self.ram_read(self.pc + 1)
-        operand_b = self.ram_read(self.pc + 2)  
+    def mul(self, operand_a, operand_b):
         self.alu("MUL", operand_a, operand_b)
         self.pc += 3
 
-    def push(self):
-        # decrement sp
+    def add(self, operand_a, operand_b):
+        self.alu('ADD', operand_a, operand_b)
+        self.pc += 3
+    
+    def push_value(self, value):
         self.reg[self.sp] -= 1
-        sp = self.reg[self.sp]
-        # Get the value we want to store from the register
-        reg_num = self.ram_read(self.pc + 1)
+        self.ram_write(value, self.reg[self.sp])
         
-        # Store it
-        self.ram_write(self.reg[reg_num], sp)
+    def push(self, operand_a, operand_b):
+        # decrement sp
+        self.push_value(self.reg[operand_a])
         self.pc += 2
 
-    def pop(self):
-        sp = self.reg[self.sp]
-        value = self.ram[sp]
-        reg_num = self.ram_read(self.pc + 1)
-        self.reg[reg_num] = value
+    def pop_value(self):
+        value = self.ram_read(self.reg[self.sp])
         self.reg[self.sp] += 1
+        return value
+    
+    def pop(self, operand_a, operand_b):
+
+        self.reg[operand_a] = self.pop_value()
         self.pc += 2
+
+    def call(self, operand_a, operand_b):
+        self.push_value(self.pc + 2)
+        self.pc = self.reg[operand_a]
+
+
+    def ret(self, operand_a, operand_b):
+        self.pc = self.pop_value()
+        
+    
+        
+        
+       
+        
+        
         
         
     def alu(self, op, reg_a, reg_b):
@@ -157,16 +180,19 @@ class CPU:
 
         print()
 
+    
     def run(self):
         """Run the CPU."""
+        
         self.load()
         
-        while True:
+        while self.running:
             # read memory address
             ir = self.ram_read(self.pc)
+            operand_a = self.ram_read(self.pc + 1)
+            operand_b = self.ram_read(self.pc + 2)
+            
             # read bytes from Ram
-            self.branch[ir]()
+            if int(bin(ir), 2) in self.branch:
+                self.branch[ir](operand_a, operand_b)
 
-            
-                
-            
