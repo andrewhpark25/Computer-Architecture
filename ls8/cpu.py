@@ -11,6 +11,11 @@ POP = 0b01000110
 CALL = 0b01010000 
 RET = 0b00010001
 ADD = 0b10100000
+CMP = 0b10100111
+JMP = 0b01010100
+JEQ = 0b01010101 
+JNE = 0b01010110
+
 
 class CPU:
     """Main CPU class."""
@@ -32,7 +37,13 @@ class CPU:
         self.branch[CALL] = self.call
         self.branch[RET] = self.ret
         self.branch[ADD] = self.add
-
+        self.branch[CMP] = self.cmp_func
+        self.branch[JMP] = self.jmp
+        self.branch[JEQ] = self.jeq
+        self.branch[JNE] = self.jne
+        self.E = 0
+        self.L = 0
+        self.G = 0
 
        
 
@@ -141,11 +152,24 @@ class CPU:
         self.pc = self.pop_value()
         
     
+    def cmp_func(self, operand_a, operand_b):
+        self.alu('CMP', operand_a, operand_b)
+        self.pc += 3
         
-        
+    def jmp(self, operand_a, operand_b):
+        self.pc = self.reg[operand_a]
        
-        
-        
+    def jeq(self, operand_a, operand_b):
+        if self.E == 1:
+            self.pc = self.reg[operand_a]
+        else:
+            self.pc += 2
+
+    def jne(self, operand_a, operand_b):
+        if self.E == 0:
+            self.pc = self.reg[operand_a]
+        else:
+            self.pc += 2
         
         
     def alu(self, op, reg_a, reg_b):
@@ -156,6 +180,21 @@ class CPU:
             
         elif op == "MUL":
             self.reg[reg_a] *= self.reg[reg_b]
+
+        elif op == 'CMP':
+            if self.reg[reg_a] == self.reg[reg_b]:
+                self.E = 1
+                self.L = 0
+                self.G = 0
+            elif self.reg[reg_a] < self.reg[reg_b]:
+                self.L = 1
+                self.E = 0
+                self.G = 0
+            elif self.reg[reg_a] > self.reg[reg_b]:
+                self.G = 1
+                self.E = 0
+                self.L = 0
+               
    
         else:
             raise Exception("Unsupported ALU operation")
